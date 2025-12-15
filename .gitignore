@@ -32,6 +32,10 @@ test_results/
 *.xlsx
 *.wav
 
+# Netlify
+.netlify/
+.pip_cache/
+
 # 配置文件（可能包含敏感信息，可选）
 # config.json
 
@@ -56,4 +60,3 @@ desktop.ini
 
 # Git 相关（虽然通常不需要，但以防万一）
 .git/
-

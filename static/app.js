@@ -10,6 +10,11 @@ let referenceData = null;
 let results = [];
 let config = {};
 
+// API 基础路径（支持 Netlify Functions）
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? '' 
+  : '/.netlify/functions/api';
+
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     initChart();
@@ -66,7 +71,7 @@ function initChart() {
 // 加载配置
 async function loadConfig() {
     try {
-        const response = await fetch('/api/config');
+        const response = await fetch(`${API_BASE}/api/config`);
         config = await response.json();
         updateCheckboxes();
     } catch (error) {
@@ -119,7 +124,7 @@ async function updateConfigFromUI() {
     config.enable_crest_factor_check = document.getElementById('enableCrestFactor').checked;
     
     try {
-        await fetch('/api/config', {
+        await fetch(`${API_BASE}/api/config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(config)
@@ -308,7 +313,7 @@ async function analyzeAudio(audioData, micId, sampleRate) {
         updateStatus('⚙️ 分析数据中...');
         log('⚙️ 分析音频数据...');
         
-        const response = await fetch('/api/analyze', {
+        const response = await fetch(`${API_BASE}/api/analyze`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -505,7 +510,7 @@ function toggleReferenceMode() {
 // 更新标准麦克风信息
 async function updateReferenceInfo() {
     try {
-        const response = await fetch('/api/reference');
+        const response = await fetch(`${API_BASE}/api/reference`);
         const data = await response.json();
         
         const infoDiv = document.getElementById('referenceInfo');
@@ -535,7 +540,7 @@ async function updateReferenceInfo() {
 // 更新统计
 async function updateStatistics() {
     try {
-        const response = await fetch('/api/results');
+        const response = await fetch(`${API_BASE}/api/results`);
         const data = await response.json();
         results = data.results || [];
         
@@ -556,7 +561,7 @@ async function updateStatistics() {
 // 导出报告
 async function exportReport() {
     try {
-        const response = await fetch('/api/export');
+        const response = await fetch(`${API_BASE}/api/export`);
         if (response.ok) {
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -585,7 +590,7 @@ async function clearResults() {
     }
     
     try {
-        await fetch('/api/results', { method: 'DELETE' });
+        await fetch(`${API_BASE}/api/results`, { method: 'DELETE' });
         results = [];
         referenceData = null;
         updateStatistics();

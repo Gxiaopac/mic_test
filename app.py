@@ -397,10 +397,10 @@ def export_report():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+# 确保输出目录存在（在应用启动时）
+Path('test_results').mkdir(exist_ok=True)
+
 if __name__ == '__main__':
-    # 确保输出目录存在
-    Path('test_results').mkdir(exist_ok=True)
-    
     print("=" * 50)
     print("麦克风批量测试工具 - Web版本 v2.10")
     print("=" * 50)

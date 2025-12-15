@@ -1,0 +1,28 @@
+[build]
+  # 指定 Python 版本（使用有预构建轮子的版本）
+  command = "pip install -r requirements.txt"
+  functions = "netlify/functions"
+  publish = "."
+
+[build.environment]
+  # 指定 Python 版本
+  PYTHON_VERSION = "3.11"
+  # 使用 pip 缓存加速
+  PIP_CACHE_DIR = ".pip_cache"
+  # 禁用 pip 的构建隔离，使用系统包
+  PIP_NO_BUILD_ISOLATION = "false"
+
+# Netlify Functions 配置
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+
+# 静态文件配置
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+
