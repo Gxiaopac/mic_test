@@ -8,7 +8,7 @@
     "sensitivity_tolerance": 0.3,
     "enable_thd_check": false,
     "enable_peak_check": true,
-    "enable_snr_check": true,
+    "enable_snr_check": false,
     "enable_sensitivity_check": true,
     "enable_loopback_check": true,
     "enable_mav_check": true,
@@ -18,9 +18,9 @@
     "mav_min": 0.01,
     "mav_max": 0.9,
     "crest_factor_min": 1.2,
-    "crest_factor_max": 5.0,
+    "crest_factor_max": 5,
     "auto_play_test_tone": false,
-    "test_tone_volume": 1.0,
+    "test_tone_volume": 1,
     "test_tone_source": "file",
     "test_tone_file": "test_tone.wav"
 }

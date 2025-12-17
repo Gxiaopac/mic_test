@@ -10,10 +10,14 @@ let referenceData = null;
 let results = [];
 let config = {};
 
-// API 基础路径（支持 Netlify Functions）
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? '' 
-  : '/.netlify/functions/api';
+// API 基础路径
+// 如果是 file:// 协议或本地开发，使用 Flask 服务器地址
+// 如果是 Netlify 部署，使用 /api（会被 redirect 到函数）
+const API_BASE = (window.location.protocol === 'file:' || 
+                  window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1')
+  ? 'http://127.0.0.1:5000'
+  : '/api';
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
@@ -137,6 +141,19 @@ async function updateConfigFromUI() {
 // 请求麦克风访问
 async function requestMicrophoneAccess() {
     try {
+        // 先请求麦克风权限，这样才能获取完整的设备信息
+        try {
+            const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // 获取权限后立即停止临时流
+            tempStream.getTracks().forEach(track => track.stop());
+        } catch (permError) {
+            log(`需要麦克风权限才能枚举设备: ${permError.message}`, 'error');
+            const select = document.getElementById('deviceSelect');
+            select.innerHTML = '<option value="">请允许麦克风权限</option>';
+            return;
+        }
+        
+        // 现在可以枚举设备了
         const devices = await navigator.mediaDevices.enumerateDevices();
         const audioInputs = devices.filter(device => device.kind === 'audioinput');
         
@@ -145,6 +162,7 @@ async function requestMicrophoneAccess() {
         
         if (audioInputs.length === 0) {
             select.innerHTML = '<option value="">未找到音频输入设备</option>';
+            log('未找到音频输入设备', 'error');
             return;
         }
         
@@ -155,9 +173,11 @@ async function requestMicrophoneAccess() {
             select.appendChild(option);
         });
         
-        log(`找到 ${audioInputs.length} 个音频输入设备`);
+        log(`✅ 找到 ${audioInputs.length} 个音频输入设备`);
     } catch (error) {
         log(`设备枚举失败: ${error.message}`, 'error');
+        const select = document.getElementById('deviceSelect');
+        select.innerHTML = '<option value="">设备枚举失败</option>';
     }
 }
 
@@ -363,7 +383,13 @@ async function analyzeAudio(audioData, micId, sampleRate) {
             document.getElementById('playAudio').disabled = false;
             
         } else {
-            throw new Error(result.message || '分析失败');
+            const errorMsg = result.message || '分析失败';
+            const errorTrace = result.trace || '';
+            log(`❌ 分析失败: ${errorMsg}`, 'error');
+            if (errorTrace) {
+                console.error('服务器错误详情:', errorTrace);
+            }
+            throw new Error(errorMsg);
         }
         
     } catch (error) {

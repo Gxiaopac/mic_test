@@ -62,6 +62,21 @@ def load_config():
 
 config = load_config()
 
+def convert_to_native_types(obj):
+    """将 NumPy 类型转换为 Python 原生类型，确保 JSON 可序列化"""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_to_native_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_native_types(item) for item in obj]
+    else:
+        return obj
+
 def preprocess_audio(audio_data, sample_rate, pre_roll=0.3):
     """预处理音频数据"""
     if audio_data is None or len(audio_data) == 0:
@@ -193,6 +208,16 @@ def index():
     """主页面"""
     return render_template('index.html')
 
+@app.route('/test')
+def test():
+    """测试路由"""
+    return jsonify({'status': 'ok', 'message': '服务器运行正常'})
+
+@app.route('/favicon.ico')
+def favicon():
+    """返回空 favicon 避免 404"""
+    return '', 204
+
 @app.route('/api/config', methods=['GET'])
 def get_config():
     """获取配置"""
@@ -218,10 +243,20 @@ def analyze_audio():
     
     try:
         data = request.json
-        audio_data = np.array(data['audio_data'], dtype=np.float32)
+        if not data or 'audio_data' not in data:
+            return jsonify({'status': 'error', 'message': '缺少音频数据'}), 400
+        
+        audio_data_list = data['audio_data']
+        if not audio_data_list or len(audio_data_list) == 0:
+            return jsonify({'status': 'error', 'message': '音频数据为空'}), 400
+        
+        print(f"收到音频数据: {len(audio_data_list)} 个采样点")
+        audio_data = np.array(audio_data_list, dtype=np.float32)
         mic_id = int(data['mic_id'])
         sample_rate = int(data.get('sample_rate', config['sample_rate']))
         is_setting_reference = data.get('is_setting_reference', False)
+        
+        print(f"麦克风 ID: {mic_id}, 采样率: {sample_rate}, 数据长度: {len(audio_data)}")
         
         # 预处理音频
         audio_data = preprocess_audio(audio_data, sample_rate)
@@ -258,19 +293,19 @@ def analyze_audio():
         )
         
         result = {
-            'mic_id': mic_id,
+            'mic_id': int(mic_id),
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'rms': round(rms, 4),
-            'rms_deviation': round(rms_deviation, 1) if rms_deviation is not None else None,
-            'peak': round(peak, 4),
-            'mav': round(mav, 4),
-            'crest_factor': round(crest_factor, 2),
-            'dominant_freq': round(dominant_freq, 2),
-            'snr_db': round(snr, 2) if snr != float('inf') else 999,
-            'thd_percent': round(thd * 100, 2),
-            'is_pass': is_pass,
+            'rms': float(round(rms, 4)),
+            'rms_deviation': float(round(rms_deviation, 1)) if rms_deviation is not None else None,
+            'peak': float(round(peak, 4)),
+            'mav': float(round(mav, 4)),
+            'crest_factor': float(round(crest_factor, 2)),
+            'dominant_freq': float(round(dominant_freq, 2)),
+            'snr_db': float(round(snr, 2)) if snr != float('inf') else 999.0,
+            'thd_percent': float(round(thd * 100, 2)),
+            'is_pass': bool(is_pass),
             'issues': '; '.join(issues) if issues else '正常',
-            'sample_rate': sample_rate
+            'sample_rate': int(sample_rate)
         }
         
         # 如果是设置标准麦克风
@@ -281,14 +316,25 @@ def analyze_audio():
         
         results.append(result)
         
-        return jsonify({
+        # 确保所有数据都是可序列化的
+        response_data = {
             'status': 'success',
-            'result': result,
-            'reference_data': reference_data
-        })
+            'result': convert_to_native_types(result),
+            'reference_data': convert_to_native_types(reference_data) if reference_data else None
+        }
+        return jsonify(response_data)
     
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        import traceback
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+        print(f"分析错误: {error_msg}")
+        print(f"错误详情: {error_trace}")
+        return jsonify({
+            'status': 'error', 
+            'message': error_msg,
+            'trace': error_trace
+        }), 500
 
 @app.route('/api/reference', methods=['POST'])
 def set_reference():
@@ -408,5 +454,5 @@ if __name__ == '__main__':
     print(f"访问地址: http://127.0.0.1:5000")
     print("=" * 50)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
 

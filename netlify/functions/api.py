@@ -19,14 +19,15 @@ try:
     
     def handler(event, context):
         """Netlify Function 处理函数"""
-        # Netlify 会将 /api/* 重定向到 /.netlify/functions/api/api/*
-        # 需要移除多余的 /api 前缀
+        # Redirect 规则：/api/* -> /.netlify/functions/api/:splat
+        # 确保传给 Flask 的路径以 /api/ 开头
         path = event.get('path', '')
-        if path.startswith('/api/api/'):
-            event['path'] = path.replace('/api/api/', '/api/', 1)
-        elif path.startswith('/.netlify/functions/api/api/'):
-            event['path'] = path.replace('/.netlify/functions/api/api/', '/api/', 1)
-        
+        if path.startswith('/.netlify/functions/api/'):
+            event['path'] = path.replace('/.netlify/functions/api', '', 1)
+        # 若依然未带 /api 前缀，则补上
+        if not event['path'].startswith('/api/'):
+            event['path'] = '/api' + event['path']
+
         return handle_request(app, event, context)
 except ImportError as e:
     # 如果导入失败，返回错误信息
