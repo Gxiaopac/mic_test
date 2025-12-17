@@ -6,7 +6,7 @@
 
 [build.environment]
   # 指定 Python 版本（使用 Netlify 可用的预编译版本）
-  PYTHON_VERSION = "3.10"
+  PYTHON_VERSION = "3.11"
   # 使用 pip 缓存加速
   PIP_CACHE_DIR = ".pip_cache"
   # 禁用 pip 的构建隔离，使用系统包

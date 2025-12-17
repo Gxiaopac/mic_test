@@ -1,6 +1,65 @@
 # Netlify 部署指南
 
-## 🎯 问题解决
+## ⚠️ 重要警告
+
+**这个应用主要设计用于本地使用，不适合部署到 Netlify！**
+
+### 为什么不适合 Netlify？
+
+1. **需要访问本地麦克风**：这个应用需要用户浏览器访问本地麦克风设备，这在本地运行（`localhost`）时工作正常，但在 Netlify 上部署后，用户访问的是远程服务器，麦克风访问可能受限。
+
+2. **需要持续运行的服务器**：这是一个 Flask 应用，需要持续运行的服务器来处理音频分析。虽然可以通过 Netlify Functions 包装，但这不是最佳方案，而且有执行时间限制。
+
+3. **本地使用更合适**：这个工具主要用于测试本地麦克风设备，在本地运行（`python app.py`）是最佳使用方式。
+
+### 推荐使用方式
+
+**本地运行**（推荐）：
+```bash
+cd MicTester_v2.10_Web
+pip install -r requirements.txt
+python app.py
+# 然后访问 http://127.0.0.1:5000
+```
+
+**如果确实需要部署到云端**，建议使用：
+- **Render**（推荐）：专门支持 Flask 应用
+- **Railway**：简单易用，自动检测 Flask
+- **Heroku**：传统但稳定的选择
+
+---
+
+## 🎯 问题解决（如果仍要尝试 Netlify）
+
+### ⚠️ 重要提示：Netlify 不适合此应用
+
+**核心问题**：这个应用是一个**需要访问本地麦克风**的 Web 应用，主要设计用于**本地使用**。Netlify 主要用于静态网站和 Serverless Functions，不适合运行需要持续运行的 Flask 服务器。
+
+**为什么会出现构建错误**：
+1. Netlify 使用 `mise` 工具管理 Python 版本
+2. `runtime.txt` 中的 `python-3.10` 格式不被 `mise` 识别
+3. Netlify 的构建环境可能不支持直接指定 Python 3.10
+
+**已修复的配置**：
+1. ✅ `runtime.txt` 已更新为 `3.11`（Netlify 支持的格式）
+2. ✅ `netlify.toml` 中的 `PYTHON_VERSION` 已更新为 `3.11`
+3. ✅ 使用 Python 3.11（有预构建的 numpy 轮子）
+
+### 问题：mise 找不到 python-3.10 定义
+
+**错误信息**：
+```
+mise ERROR Failed to install core:python@python-3.10:
+python-build: definition not found: python-3.10
+```
+
+**原因**：
+- `runtime.txt` 中使用了 `python-3.10` 格式，但 Netlify 的 `mise` 工具不支持此格式
+- Netlify 期望的格式是 `3.11` 或 `python-3.11.7`（完整版本号）
+
+**解决方案**：
+1. ✅ 修改 `runtime.txt` 为 `3.11`（已修复）
+2. ✅ 更新 `netlify.toml` 中的 `PYTHON_VERSION` 为 `3.11`（已修复）
 
 ### 问题：numpy 安装失败
 
@@ -9,7 +68,7 @@
 **解决方案**：
 1. ✅ 使用 Python 3.11（有预构建的 numpy 轮子）
 2. ✅ 更新 requirements.txt 使用兼容的版本范围
-3. ✅ 创建 `runtime.txt` 指定 Python 版本
+3. ✅ 创建 `runtime.txt` 指定 Python 版本（格式已修复）
 4. ✅ 创建 `netlify.toml` 配置文件
 
 ## 📋 部署步骤
